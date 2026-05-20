@@ -132,7 +132,7 @@ textarea { resize:vertical; min-height:90px; }
 }
 .modal.active { opacity: 1; pointer-events: auto; }
 .modal-content {
-  background: white; width: 90%; max-width: 1100px; max-height: 90vh;
+  background: white; width: 95%; max-width: 1200px; max-height: 90vh;
   border-radius: 25px; display: flex; flex-direction: column; overflow: hidden;
   transform: translateY(30px); transition: 0.3s;
 }
@@ -149,6 +149,36 @@ textarea { resize:vertical; min-height:90px; }
 .close-btn:hover { background: #dc2626; transform: rotate(90deg); }
 .modal-body { padding: 30px; overflow-y: auto; flex: 1; }
 
+/* FILTER SEARCH BOX */
+.filter-container {
+  display: flex;
+  margin-bottom: 20px;
+  background: #f1f5f9;
+  padding: 15px;
+  border-radius: 15px;
+  align-items: center;
+  gap: 15px;
+}
+.filter-icon {
+  font-size: 20px;
+  color: #64748b;
+  margin-left: 10px;
+}
+.filter-input {
+  flex: 1;
+  padding: 12px 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  transition: 0.3s;
+}
+.filter-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 /* TABLE HISTORY */
 .history-table { width: 100%; border-collapse: collapse; }
 .history-table th { background: #0f172a; color: white; padding: 15px; text-align: left; font-size: 14px; }
@@ -157,6 +187,7 @@ textarea { resize:vertical; min-height:90px; }
 .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
 .action-buttons button { padding: 8px 12px; font-size: 12px; width: auto; }
 .empty-history { text-align: center; padding: 50px; color: #64748b; font-style: italic; }
+.hidden-row { display: none !important; }
 
 /* RESPONSIVE */
 @media(max-width:1200px){
@@ -173,6 +204,7 @@ textarea { resize:vertical; min-height:90px; }
   .kop-text h1 { font-size:20px; }
   .judul h2 { font-size:22px; }
   .modal-content { width: 95%; }
+  .filter-container { flex-direction: column; align-items: stretch; }
 }
 
 /* PRINT SETTINGS */
@@ -207,7 +239,13 @@ textarea { resize:vertical; min-height:90px; }
       <button class="close-btn" onclick="tutupHistory()">✕</button>
     </div>
     <div class="modal-body">
-      <table class="history-table">
+      
+      <div class="filter-container">
+        <i class="fa-solid fa-search filter-icon"></i>
+        <input type="text" id="searchInput" class="filter-input" placeholder="Cari berdasarkan Nomor, Jenis, Nama Tujuan, atau Tanggal..." onkeyup="filterHistory()">
+      </div>
+
+      <table class="history-table" id="historyTable">
         <thead>
           <tr>
             <th>Nomor Surat</th>
@@ -284,18 +322,23 @@ textarea { resize:vertical; min-height:90px; }
         </select>
       </div>
 
-      <div class="form-group">
-        <label>Nama Instansi</label>
-        <input type="text" id="instansi" value="PT MAJU JAYA INDONESIA" oninput="generateSurat()">
-        <div class="checkbox-group">
+      <div class="form-group" style="margin-bottom: 15px;">
+        <div class="checkbox-group" style="margin-top: 0; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px;">
           <input type="checkbox" id="toggleInstansi" checked onchange="toggleNamaInstansi()">
-          <label for="toggleInstansi">Tampilkan Nama Instansi</label>
+          <label for="toggleInstansi" style="margin-bottom: 0;">Gunakan KOP Surat (Instansi)</label>
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Alamat Instansi</label>
-        <textarea id="alamatInstansi" oninput="generateSurat()">Jl. Raya Indonesia No. 123 Surabaya</textarea>
+      <div id="instansiFormWrapper">
+        <div class="form-group">
+          <label>Nama Instansi</label>
+          <input type="text" id="instansi" value="PT MAJU JAYA INDONESIA" oninput="generateSurat()">
+        </div>
+
+        <div class="form-group">
+          <label>Alamat Instansi</label>
+          <textarea id="alamatInstansi" oninput="generateSurat()">Jl. Raya Indonesia No. 123 Surabaya</textarea>
+        </div>
       </div>
 
       <div class="form-group">
@@ -463,19 +506,24 @@ function formatTanggalIndonesia(dateString){
 /* TOGGLE INSTANSI */
 function toggleNamaInstansi(){
   const checked = document.getElementById('toggleInstansi').checked;
-  const instansi = document.getElementById('previewInstansi');
-  const alamat = document.getElementById('previewAlamatInstansi');
+  const instansiPreview = document.getElementById('previewInstansi');
+  const alamatPreview = document.getElementById('previewAlamatInstansi');
   const kopContainer = document.getElementById('kopContainer');
   const logoKiri = document.getElementById('logoKiri');
   const logoKanan = document.getElementById('logoKanan');
+  const instansiFormWrapper = document.getElementById('instansiFormWrapper');
 
   const adaLogo = logoKiri.style.display === "block" || logoKanan.style.display === "block";
 
   if(checked){
-    instansi.style.display = "block"; alamat.style.display = "block";
+    instansiFormWrapper.style.display = "block"; // Munculkan form input
+    instansiPreview.style.display = "block"; 
+    alamatPreview.style.display = "block";
     kopContainer.classList.remove('kop-hidden');
   } else {
-    instansi.style.display = "none"; alamat.style.display = "none";
+    instansiFormWrapper.style.display = "none"; // Sembunyikan form input
+    instansiPreview.style.display = "none"; 
+    alamatPreview.style.display = "none";
     if(!adaLogo){ kopContainer.classList.add('kop-hidden'); }
   }
 }
@@ -620,27 +668,37 @@ function simpanKeHistory() {
   }
 
   localStorage.setItem('suratHistory', JSON.stringify(history));
+  // Render ulang tabel namun jika modal terbuka agar filter searchbox diperbarui
+  if(document.getElementById('historyModal').classList.contains('active')) {
+      renderHistoryTable();
+  }
 }
 
 function renderHistoryTable() {
   let history = JSON.parse(localStorage.getItem('suratHistory')) || [];
   let tbody = document.getElementById('historyTableBody');
   tbody.innerHTML = "";
+  
+  // Kosongkan searchbox setiap kali merender ulang
+  document.getElementById('searchInput').value = "";
 
   if(history.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-history">Belum ada riwayat surat yang disimpan.</td></tr>`;
+    tbody.innerHTML = `<tr id="emptyRowMessage"><td colspan="5" class="empty-history">Belum ada riwayat surat yang disimpan.</td></tr>`;
     return;
   }
 
   history.forEach(data => {
     let tr = document.createElement('tr');
+    tr.className = 'history-row'; // Tambahkan class untuk target filter
     let namaTujuan = data.jenis === 'permohonan' ? (data.tujuanPermohonan || data.nama) : data.nama;
+    let tanggalIndo = formatTanggalIndonesia(data.tanggal);
+    let jenisSuratIndo = namaSuratFormat[data.jenis];
     
     tr.innerHTML = `
-      <td><strong>${data.nomor}</strong></td>
-      <td>${namaSuratFormat[data.jenis]}</td>
-      <td>${namaTujuan}</td>
-      <td>${formatTanggalIndonesia(data.tanggal)}</td>
+      <td class="col-nomor"><strong>${data.nomor}</strong></td>
+      <td class="col-jenis">${jenisSuratIndo}</td>
+      <td class="col-tujuan">${namaTujuan}</td>
+      <td class="col-tanggal">${tanggalIndo}</td>
       <td>
         <div class="action-buttons">
           <button class="btn btn-dark" onclick="lihatPreviewHistory(${data.id})" title="Preview"><i class="fa-solid fa-eye"></i></button>
@@ -654,6 +712,48 @@ function renderHistoryTable() {
     `;
     tbody.appendChild(tr);
   });
+}
+
+/* FUNGSI FILTER PENCARIAN (SEARCH BOX) */
+function filterHistory() {
+  const input = document.getElementById("searchInput");
+  const filter = input.value.toLowerCase();
+  const table = document.getElementById("historyTable");
+  const rows = table.getElementsByClassName("history-row");
+  let hasVisibleRow = false;
+
+  for (let i = 0; i < rows.length; i++) {
+    // Ambil text dari kolom Nomor, Jenis, Tujuan, dan Tanggal
+    const nomor = rows[i].querySelector(".col-nomor").innerText.toLowerCase();
+    const jenis = rows[i].querySelector(".col-jenis").innerText.toLowerCase();
+    const tujuan = rows[i].querySelector(".col-tujuan").innerText.toLowerCase();
+    const tanggal = rows[i].querySelector(".col-tanggal").innerText.toLowerCase();
+
+    // Cek apakah filter cocok dengan salah satu kolom
+    if (nomor.includes(filter) || jenis.includes(filter) || tujuan.includes(filter) || tanggal.includes(filter)) {
+      rows[i].classList.remove("hidden-row");
+      hasVisibleRow = true;
+    } else {
+      rows[i].classList.add("hidden-row");
+    }
+  }
+
+  // Mengelola pesan jika pencarian tidak ditemukan
+  const tbody = document.getElementById('historyTableBody');
+  let emptyMsgRow = document.getElementById('emptySearchMessage');
+  
+  if (!hasVisibleRow && rows.length > 0) {
+      if (!emptyMsgRow) {
+          emptyMsgRow = document.createElement('tr');
+          emptyMsgRow.id = 'emptySearchMessage';
+          emptyMsgRow.innerHTML = `<td colspan="5" class="empty-history" style="color: #ef4444;"><i class="fa-solid fa-circle-exclamation"></i> Pencarian tidak ditemukan.</td>`;
+          tbody.appendChild(emptyMsgRow);
+      } else {
+          emptyMsgRow.style.display = 'table-row';
+      }
+  } else if (emptyMsgRow) {
+      emptyMsgRow.style.display = 'none';
+  }
 }
 
 function bukaHistory() {
